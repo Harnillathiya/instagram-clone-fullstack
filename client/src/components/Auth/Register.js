@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import axios from 'axios';
 import './Auth.css';
+import TextField from '@mui/material/TextField';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -65,11 +66,13 @@ function Register() {
           {error && <div className="error-message">{error}</div>}
           
           <div className="form-group">
-            <label htmlFor="username" className="floating-label">Username</label>
-            <input
-              type="text"
-              id="username"
+            <TextField
+              label="Username"
+              variant="outlined"
+              fullWidth
+              margin="normal"
               name="username"
+              type="text"
               value={formData.username}
               onChange={handleChange}
               required
@@ -79,11 +82,13 @@ function Register() {
           </div>
           
           <div className="form-group">
-            <label htmlFor="email" className="floating-label">Email</label>
-            <input
-              type="email"
-              id="email"
+            <TextField
+              label="Email"
+              variant="outlined"
+              fullWidth
+              margin="normal"
               name="email"
+              type="email"
               value={formData.email}
               onChange={handleChange}
               required
@@ -93,26 +98,30 @@ function Register() {
           </div>
           
           <div className="form-group">
-            <label htmlFor="password" className="floating-label">Password</label>
-            <input
-              type="password"
-              id="password"
+            <TextField
+              label="Password"
+              variant="outlined"
+              fullWidth
+              margin="normal"
               name="password"
+              type="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder=" "
               required
               className="form-input"
               minLength="6"
+              placeholder=" "
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="confirmPassword" className="floating-label">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
+            <TextField
+              label="Confirm Password"
+              variant="outlined"
+              fullWidth
+              margin="normal"
               name="confirmPassword"
+              type="password"
               value={formData.confirmPassword}
               onChange={handleChange}
               required

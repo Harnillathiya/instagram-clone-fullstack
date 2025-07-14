@@ -70,12 +70,12 @@
 .auth-form {
   margin-bottom: 20px;
 }
-
+/* 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 5px;
   position: relative;
   padding-top: 10px;
-}
+} */
 
 .form-input {
   width: 100%;

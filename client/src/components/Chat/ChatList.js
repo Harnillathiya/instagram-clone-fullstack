@@ -2,6 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import axios from 'axios';
 import './ChatList.css';
+import Paper from '@mui/material/Paper';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Avatar from '@mui/material/Avatar';
+import Button from '@mui/material/Button';
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemText from '@mui/material/ListItemText';
+import Badge from '@mui/material/Badge';
+import CircleIcon from '@mui/icons-material/Circle';
+import Typography from '@mui/material/Typography';
 
 function ChatList() {
   const [users, setUsers] = useState([]);
@@ -64,76 +80,104 @@ function ChatList() {
   }
 
   return (
-    <div className="chat-list-container">
-      <div className="chat-list-header">
-        <div className="user-profile">
-          {currentUser && (
-            <>
-              <div className="avatar">
-                {currentUser.username.charAt(0).toUpperCase()}
-              </div>
-              <span className="username">{currentUser.username}</span>
-            </>
-          )}
-        </div>
-        <button onClick={handleLogout} className="logout-button">
-          Logout
-        </button>
-      </div>
+    <Paper elevation={3} className="chat-list-container">
+      <Box sx={{ p: 2 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {currentUser && (
+              <>
+                <Avatar sx={{ mr: 1 }}>{currentUser.username.charAt(0).toUpperCase()}</Avatar>
+                <Typography variant="h6">{currentUser.username}</Typography>
+              </>
+            )}
+          </Box>
+          <Button
+            variant="outlined"
+            startIcon={<LogoutOutlinedIcon />}
+            onClick={handleLogout}
+            sx={{ textTransform: 'none' }}
+          >
+            Logout
+          </Button>
+        </Stack>
+      </Box>
 
-      <div className="search-container">
-        <input
-          type="text"
-          placeholder="Search users..."
+      <Box sx={{ p: 2 }}>
+        <TextField
+          fullWidth
+          label="Search users..."
+          variant="outlined"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchOutlinedIcon />
+              </InputAdornment>
+            ),
+          }}
         />
-      </div>
+      </Box>
 
       {error && <div className="error-message">{error}</div>}
 
-      <div className="users-list">
-        {filteredUsers.length > 0 ? (
-          filteredUsers.map(user => (
-            <Link 
-              to={`/chat/${user._id}`} 
-              key={user._id} 
-              className="user-item"
-            >
-              <div className="user-avatar">
-                {user.username.charAt(0).toUpperCase()}
-              </div>
-              <div className="user-info">
-                <h3 className="user-name">{user.username}</h3>
-                <p className="user-status">
-                  {user.online ? 'Online' : 'Offline'}
-                </p>
-              </div>
-              {user.unreadCount > 0 && (
-                <div className="unread-badge">{user.unreadCount}</div>
-              )}
-            </Link>
-          ))
-        ) : (
-          <div className="no-results">
-            {searchTerm ? 'No users found matching your search' : 'No users available'}
-          </div>
-        )}
-      </div>
+      <Box sx={{ p: 2 }}>
+        <List>
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map(user => (
+              <ListItem
+                button
+                component={Link}
+                to={`/chat/${user._id}`}
+                key={user._id}
+                sx={{
+                  borderRadius: 2,
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+              >
+                <ListItemAvatar>
+                  <Avatar>{user.username.charAt(0).toUpperCase()}</Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={user.username}
+                  secondary={
+                    <Stack direction="row" alignItems="center">
+                      <CircleIcon sx={{ fontSize: 8, mr: 0.5 }} color={user.online ? 'success' : 'error'} />
+                      {user.online ? 'Online' : 'Offline'}
+                    </Stack>
+                  }
+                />
+                {user.unreadCount > 0 && (
+                  <Badge badgeContent={user.unreadCount} color="primary" />
+                )}
+              </ListItem>
+            ))
+          ) : (
+            <Typography variant="body1" align="center">
+              {searchTerm ? 'No users found matching your search' : 'No users available'}
+            </Typography>
+          )}
+        </List>
+      </Box>
 
-      <div className="chat-list-footer">
-        <div className="app-info">
-          <div className="logo-container">
+      <Box sx={{ p: 2 }}>
+        <Stack direction="column" alignItems="center">
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
             <div className="logo-icon">
               <i className="chat-icon">💬</i>
             </div>
-            <h1 className="logo-text">InstaChat</h1>
-          </div>
-          <p className="app-version">Version 1.0.0</p>
-        </div>
-      </div>
-    </div>
+            <Typography variant="h5" component="h1" className="logo-text">
+              InstaChat
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            Version 1.0.0
+          </Typography>
+        </Stack>
+      </Box>
+    </Paper>
   );
 }
 

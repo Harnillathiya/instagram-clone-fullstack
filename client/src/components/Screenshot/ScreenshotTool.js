@@ -3,6 +3,24 @@ import { useParams, useHistory } from 'react-router-dom';
 import axios from 'axios';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
+import Paper from '@mui/material/Paper';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import DownloadIcon from '@mui/icons-material/Download';
+import TextField from '@mui/material/TextField';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import FormControl from '@mui/material/FormControl';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Typography from '@mui/material/Typography';
+import Avatar from '@mui/material/Avatar';
 import './ScreenshotTool.css';
 
 function ScreenshotTool() {
@@ -108,164 +126,159 @@ function ScreenshotTool() {
   };
 
   if (isLoading) {
-    return <div className="loading">Loading chat data...</div>;
+    return <Box className="loading" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}><Typography>Loading chat data...</Typography></Box>;
   }
 
   return (
-    <div className="screenshot-tool">
-      <div className="screenshot-header">
-        <button onClick={() => history.goBack()} className="back-button">
-          Back
-        </button>
-        <h2>Edit & Download Chat</h2>
-        <button onClick={captureAndDownload} className="download-button">
-          Download
-        </button>
-      </div>
+    <Box sx={{ width: '100vw', height: '100vh', minHeight: '100vh', minWidth: '100vw', m: 0, p: 0, bgcolor: customStyles.backgroundColor, display: 'flex', flexDirection: 'column' }}>
+      <Paper elevation={2} sx={{ borderRadius: 0, p: 2, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <IconButton onClick={() => history.goBack()} color="primary">
+            <ArrowBackIosNewIcon />
+          </IconButton>
+          <Typography variant="h6">Edit & Download Chat</Typography>
+        </Stack>
+        <Button onClick={captureAndDownload} variant="contained" startIcon={<DownloadIcon />}>Download</Button>
+      </Paper>
 
-      <div className="screenshot-options">
-        <div className="option-group">
-          <label>File Name:</label>
-          <input 
-            type="text" 
-            value={fileName} 
-            onChange={(e) => setFileName(e.target.value)} 
-          />
-        </div>
-        
-        <div className="option-group">
-          <label>Format:</label>
-          <select 
-            value={fileFormat} 
-            onChange={(e) => setFileFormat(e.target.value)}
-          >
-            <option value="png">PNG</option>
-            <option value="jpeg">JPEG</option>
-          </select>
-        </div>
-        
-        <div className="option-group">
-          <label>Background:</label>
-          <input 
-            type="color" 
-            name="backgroundColor" 
-            value={customStyles.backgroundColor} 
-            onChange={handleStyleChange} 
-          />
-        </div>
-        
-        <div className="option-group">
-          <label>Sent Bubble:</label>
-          <input 
-            type="color" 
-            name="sentBubbleColor" 
-            value={customStyles.sentBubbleColor} 
-            onChange={handleStyleChange} 
-          />
-        </div>
-        
-        <div className="option-group">
-          <label>Received Bubble:</label>
-          <input 
-            type="color" 
-            name="receivedBubbleColor" 
-            value={customStyles.receivedBubbleColor} 
-            onChange={handleStyleChange} 
-          />
-        </div>
-        
-        <div className="option-group">
-          <label>Font:</label>
-          <select 
-            name="fontFamily" 
-            value={customStyles.fontFamily} 
-            onChange={handleStyleChange}
-          >
-            <option value="Arial, sans-serif">Arial</option>
-            <option value="'Segoe UI', sans-serif">Segoe UI</option>
-            <option value="'Roboto', sans-serif">Roboto</option>
-            <option value="'Open Sans', sans-serif">Open Sans</option>
-            <option value="'Comic Sans MS', cursive">Comic Sans</option>
-          </select>
-        </div>
-        
-        <div className="option-group">
-          <label>Font Size:</label>
-          <select 
-            name="fontSize" 
-            value={customStyles.fontSize} 
-            onChange={handleStyleChange}
-          >
-            <option value="12px">Small</option>
-            <option value="14px">Medium</option>
-            <option value="16px">Large</option>
-            <option value="18px">Extra Large</option>
-          </select>
-        </div>
-      </div>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ flex: 1, px: 2, pb: 2 }}>
+        {/* Options Panel */}
+        <Paper elevation={1} sx={{ minWidth: 260, maxWidth: 320, p: 2, mb: { xs: 2, md: 0 }, flexShrink: 0 }}>
+          <Stack spacing={2}>
+            <TextField
+              label="File Name"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              fullWidth
+              size="small"
+            />
+            <FormControl fullWidth size="small">
+              <InputLabel>Format</InputLabel>
+              <Select
+                value={fileFormat}
+                label="Format"
+                onChange={(e) => setFileFormat(e.target.value)}
+              >
+                <MenuItem value="png">PNG</MenuItem>
+                <MenuItem value="jpeg">JPEG</MenuItem>
+              </Select>
+            </FormControl>
+            <Box>
+              <Typography variant="body2" mb={0.5}>Background</Typography>
+              <input type="color" name="backgroundColor" value={customStyles.backgroundColor} onChange={handleStyleChange} style={{ width: 40, height: 32, border: 'none', background: 'none' }} />
+            </Box>
+            <Box>
+              <Typography variant="body2" mb={0.5}>Sent Bubble</Typography>
+              <input type="color" name="sentBubbleColor" value={customStyles.sentBubbleColor} onChange={handleStyleChange} style={{ width: 40, height: 32, border: 'none', background: 'none' }} />
+            </Box>
+            <Box>
+              <Typography variant="body2" mb={0.5}>Received Bubble</Typography>
+              <input type="color" name="receivedBubbleColor" value={customStyles.receivedBubbleColor} onChange={handleStyleChange} style={{ width: 40, height: 32, border: 'none', background: 'none' }} />
+            </Box>
+            <FormControl fullWidth size="small">
+              <InputLabel>Font</InputLabel>
+              <Select
+                name="fontFamily"
+                value={customStyles.fontFamily}
+                label="Font"
+                onChange={handleStyleChange}
+              >
+                <MenuItem value="Arial, sans-serif">Arial</MenuItem>
+                <MenuItem value="'Segoe UI', sans-serif">Segoe UI</MenuItem>
+                <MenuItem value="'Roboto', sans-serif">Roboto</MenuItem>
+                <MenuItem value="'Open Sans', sans-serif">Open Sans</MenuItem>
+                <MenuItem value="'Comic Sans MS', cursive">Comic Sans</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth size="small">
+              <InputLabel>Font Size</InputLabel>
+              <Select
+                name="fontSize"
+                value={customStyles.fontSize}
+                label="Font Size"
+                onChange={handleStyleChange}
+              >
+                <MenuItem value="12px">Small</MenuItem>
+                <MenuItem value="14px">Medium</MenuItem>
+                <MenuItem value="16px">Large</MenuItem>
+                <MenuItem value="18px">Extra Large</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+        </Paper>
 
-      <div 
-        className="chat-preview" 
-        ref={chatContainerRef}
-        style={{
-          backgroundColor: customStyles.backgroundColor,
-          fontFamily: customStyles.fontFamily,
-          fontSize: customStyles.fontSize
-        }}
-      >
-        {messages.map((msg, index) => (
-          <div 
-            key={index} 
-            className={`message ${msg.sender === Object.keys(users)[0] ? 'sent' : 'received'}`}
-            style={{
-              backgroundColor: msg.sender === Object.keys(users)[0] 
-                ? customStyles.sentBubbleColor 
-                : customStyles.receivedBubbleColor
-            }}
-            onClick={() => handleEditMessage(msg)}
-          >
-            <div className="message-header">
-              <span className="username">
-                {users[msg.sender]?.username || 'Unknown User'}
-              </span>
-            </div>
-            {msg.isScreenshot ? (
-              <div className="screenshot-message">
-                <p>Screenshot</p>
-                {msg.screenshotMetadata && Object.entries(msg.screenshotMetadata).map(([key, value]) => (
-                  <p key={key}><strong>{key}:</strong> {value}</p>
-                ))}
-              </div>
-            ) : (
-              <p>{msg.content}</p>
-            )}
-            <span className="timestamp">
-              {new Date(msg.createdAt).toLocaleTimeString()}
-            </span>
-          </div>
-        ))}
-      </div>
+        {/* Chat Preview */}
+        <Paper elevation={1} sx={{ flex: 1, p: 2, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', background: customStyles.backgroundColor }}>
+          <Stack spacing={2}>
+            {messages.map((msg, index) => (
+              <Box
+                key={index}
+                sx={{
+                  display: 'flex',
+                  flexDirection: msg.sender === Object.keys(users)[0] ? 'row-reverse' : 'row',
+                  alignItems: 'flex-end',
+                }}
+                onClick={() => handleEditMessage(msg)}
+              >
+                <Avatar sx={{ bgcolor: msg.sender === Object.keys(users)[0] ? 'primary.main' : 'grey.400', ml: msg.sender === Object.keys(users)[0] ? 2 : 0, mr: msg.sender === Object.keys(users)[0] ? 0 : 2 }}>
+                  {users[msg.sender]?.username?.charAt(0).toUpperCase() || '?'}
+                </Avatar>
+                <Box
+                  sx={{
+                    bgcolor: msg.sender === Object.keys(users)[0] ? customStyles.sentBubbleColor : customStyles.receivedBubbleColor,
+                    color: 'text.primary',
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    minWidth: 80,
+                    maxWidth: '70%',
+                    boxShadow: 1,
+                  }}
+                >
+                  <Box sx={{ mb: 0.5 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      {users[msg.sender]?.username || 'Unknown User'}
+                    </Typography>
+                  </Box>
+                  {msg.isScreenshot ? (
+                    <Box className="screenshot-message">
+                      <Typography variant="body2" fontWeight="bold">Screenshot</Typography>
+                      {msg.screenshotMetadata && Object.entries(msg.screenshotMetadata).map(([key, value]) => (
+                        <Typography key={key} variant="caption"><strong>{key}:</strong> {value}</Typography>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Typography variant="body1">{msg.content}</Typography>
+                  )}
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'right' }}>
+                    {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString() : ''}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Stack>
+        </Paper>
+      </Stack>
 
-      {editMode && (
-        <div className="edit-overlay">
-          <div className="edit-form">
-            <h3>Edit Message</h3>
-            <textarea
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-            ></textarea>
-            <div className="edit-actions">
-              <button onClick={saveEditedMessage} className="save-btn">
-                Save
-              </button>
-              <button onClick={() => setEditMode(false)} className="cancel-btn">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Edit Dialog */}
+      <Dialog open={editMode} onClose={() => setEditMode(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Edit Message</DialogTitle>
+        <DialogContent>
+          <TextField
+            value={editedContent}
+            onChange={(e) => setEditedContent(e.target.value)}
+            fullWidth
+            multiline
+            minRows={2}
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={saveEditedMessage} variant="contained">Save</Button>
+          <Button onClick={() => setEditMode(false)} variant="outlined">Cancel</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
 
