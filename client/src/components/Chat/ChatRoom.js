@@ -141,9 +141,8 @@ function ChatRoom() {
     try {
       const formData = new FormData();
       formData.append('image', selectedImage);
-      
       const res = await messagesAPI.uploadImage(formData);
-      return res.data.imageUrl;
+      return res.data.fileId; // Use fileId from GridFS
     } catch (err) {
       console.error('Error uploading image:', err);
       return null;
@@ -158,16 +157,12 @@ function ChatRoom() {
 
     if (currentUser && user && socket) {
       const roomId = [currentUser._id, userId].sort().join('-');
-      
-      let imageUrl = null;
+      let imageFileId = null;
       let messageType = 'text';
-      
-      // Upload image if selected
       if (selectedImage) {
-        imageUrl = await uploadImage();
+        imageFileId = await uploadImage();
         messageType = 'image';
       }
-      
       const messageData = {
         sender: currentUser._id,
         recipient: userId,
@@ -175,20 +170,15 @@ function ChatRoom() {
         isScreenshot: false,
         roomId,
         createdAt: new Date().toISOString(),
-        imageUrl,
+        imageFileId,
         messageType
       };
-
-      // Send message through socket
       socketSendMessage(messageData);
-
-      // Save message to database
       try {
         await messagesAPI.sendMessage(messageData);
       } catch (err) {
         console.error('Error sending message:', err);
       }
-
       setNewMessage('');
       setSelectedImage(null);
       setImagePreview(null);
@@ -364,7 +354,7 @@ function ChatRoom() {
               ) : msg.messageType === 'image' ? (
                 <Box>
                   <img 
-                    src={`http://localhost:5000${msg.imageUrl}`} 
+                    src={`http://localhost:5000/api/messages/image/${msg.imageFileId}`} 
                     alt="Shared content" 
                     style={{ 
                       maxWidth: '100%', 
@@ -372,7 +362,7 @@ function ChatRoom() {
                       borderRadius: '8px',
                       cursor: 'pointer'
                     }}
-                    onClick={() => window.open(`http://localhost:5000${msg.imageUrl}`, '_blank')}
+                    onClick={() => window.open(`http://localhost:5000/api/messages/image/${msg.imageFileId}`, '_blank')}
                   />
                   {msg.content && <Typography variant="body2" sx={{ mt: 1 }}>{msg.content}</Typography>}
                 </Box>

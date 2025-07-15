@@ -27,6 +27,10 @@ const MessageSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  imageFileId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
+  },
   messageType: {
     type: String,
     enum: ['text', 'image', 'screenshot'],

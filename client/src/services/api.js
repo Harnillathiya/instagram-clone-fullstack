@@ -50,6 +50,7 @@ export const messagesAPI = {
   getChatMessages: (chatId) => api.get(`/messages/chat/${chatId}`),
   markMessagesAsRead: (userId) => api.put(`/messages/read/${userId}`),
   uploadImage: (formData) => api.post('/messages/upload-image', formData),
+  getImage: (fileId) => api.get(`/messages/image/${fileId}`, { responseType: 'blob' }),
 };
 
 export default api; 
