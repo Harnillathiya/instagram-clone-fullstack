@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import { useHistory } from 'react-router-dom';
@@ -91,22 +91,22 @@ export const SocketProvider = ({ children }) => {
   }, [history]);
 
   // Join a chat room
-  const joinRoom = (roomId) => {
+  const joinRoom = useCallback((roomId) => {
     if (socket && isConnected) {
       socket.emit('join_room', roomId);
       console.log(`Joined room: ${roomId}`);
     }
-  };
+  }, [socket, isConnected]);
 
   // Send a message
-  const sendMessage = (messageData) => {
+  const sendMessage = useCallback((messageData) => {
     if (socket && isConnected) {
       socket.emit('send_message', messageData);
     }
-  };
+  }, [socket, isConnected]);
 
   // Listen for messages with duplicate prevention
-  const onReceiveMessage = (callback) => {
+  const onReceiveMessage = useCallback((callback) => {
     if (socket) {
       // Remove any existing listeners with the same event name to prevent duplicates
       socket.off('receive_message');
@@ -131,23 +131,23 @@ export const SocketProvider = ({ children }) => {
       };
     }
     return () => {};
-  };
+  }, [socket, currentUser]);
 
   // Update unread count for a specific user
-  const updateUnreadCount = (userId, count) => {
+  const updateUnreadCount = useCallback((userId, count) => {
     setUnreadCounts(prev => ({
       ...prev,
       [userId]: count
     }));
-  };
+  }, []);
 
   // Clear unread count for a specific user
-  const clearUnreadCount = (userId) => {
+  const clearUnreadCount = useCallback((userId) => {
     setUnreadCounts(prev => ({
       ...prev,
       [userId]: 0
     }));
-  };
+  }, []);
 
   const value = {
     socket,

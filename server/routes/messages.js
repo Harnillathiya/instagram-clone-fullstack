@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const Message = require('../models/Message');
 const User = require('../models/User');
 
@@ -16,17 +19,69 @@ const auth = (req, res, next) => {
   }
 };
 
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/images';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Check file type
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  }
+});
+
+// Upload image
+router.post('/upload-image', auth, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+
+    const imageUrl = `/uploads/images/${req.file.filename}`;
+    res.json({ 
+      imageUrl,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('Image upload error:', error);
+    res.status(500).json({ message: 'Image upload failed' });
+  }
+});
+
 // Send a message
 router.post('/', auth, async (req, res) => {
   try {
-    const { recipient, content, isScreenshot, screenshotMetadata } = req.body;
+    const { recipient, content, isScreenshot, screenshotMetadata, imageUrl, messageType } = req.body;
 
     const newMessage = new Message({
       sender: req.userId,
       recipient,
       content,
       isScreenshot: isScreenshot || false,
-      screenshotMetadata: screenshotMetadata || null
+      screenshotMetadata: screenshotMetadata || null,
+      imageUrl: imageUrl || null,
+      messageType: messageType || 'text' // 'text', 'image', 'screenshot'
     });
 
     await newMessage.save();

@@ -23,6 +23,15 @@ const MessageSchema = new mongoose.Schema({
     type: Object,
     default: null
   },
+  imageUrl: {
+    type: String,
+    default: null
+  },
+  messageType: {
+    type: String,
+    enum: ['text', 'image', 'screenshot'],
+    default: 'text'
+  },
   createdAt: {
     type: Date,
     default: Date.now

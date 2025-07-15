@@ -3,6 +3,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -18,6 +19,9 @@ const io = socketIo(server, {
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files (uploaded images)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/instagram-chat', {
