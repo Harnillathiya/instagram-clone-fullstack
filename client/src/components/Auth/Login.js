@@ -47,7 +47,7 @@ function Login() {
             <div className="logo-icon">
               <i className="chat-icon">💬</i>
             </div>
-            <h1 className="logo-text">InstaChat</h1>
+            <h1 className="logo-text">Realtime Chat</h1>
           </div>
           <p className="tagline">Connect with friends through instant messaging</p>
         </div>
