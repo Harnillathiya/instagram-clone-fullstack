@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
-import axios from 'axios';
+import { usersAPI, messagesAPI } from '../../services/api';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
 import Paper from '@mui/material/Paper';
@@ -58,18 +58,12 @@ function ScreenshotTool() {
         const [user1Id, user2Id] = chatId.split('-');
         
         // Fetch messages
-        const messagesRes = await axios.get(`http://localhost:5000/api/messages/chat/${chatId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const messagesRes = await messagesAPI.getChatMessages(chatId);
         
         // Fetch user details for both users
-        const user1Res = await axios.get(`http://localhost:5000/api/users/${user1Id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const user1Res = await usersAPI.getUserById(user1Id);
         
-        const user2Res = await axios.get(`http://localhost:5000/api/users/${user2Id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const user2Res = await usersAPI.getUserById(user2Id);
         
         setMessages(messagesRes.data);
         setUsers({
@@ -147,18 +141,18 @@ function ScreenshotTool() {
           <Stack spacing={2}>
             <TextField
               label="File Name"
-              value={fileName}
-              onChange={(e) => setFileName(e.target.value)}
+            value={fileName} 
+            onChange={(e) => setFileName(e.target.value)} 
               fullWidth
               size="small"
-            />
+          />
             <FormControl fullWidth size="small">
               <InputLabel>Format</InputLabel>
               <Select
-                value={fileFormat}
+            value={fileFormat} 
                 label="Format"
-                onChange={(e) => setFileFormat(e.target.value)}
-              >
+            onChange={(e) => setFileFormat(e.target.value)}
+          >
                 <MenuItem value="png">PNG</MenuItem>
                 <MenuItem value="jpeg">JPEG</MenuItem>
               </Select>
@@ -178,11 +172,11 @@ function ScreenshotTool() {
             <FormControl fullWidth size="small">
               <InputLabel>Font</InputLabel>
               <Select
-                name="fontFamily"
-                value={customStyles.fontFamily}
+            name="fontFamily" 
+            value={customStyles.fontFamily} 
                 label="Font"
-                onChange={handleStyleChange}
-              >
+            onChange={handleStyleChange}
+          >
                 <MenuItem value="Arial, sans-serif">Arial</MenuItem>
                 <MenuItem value="'Segoe UI', sans-serif">Segoe UI</MenuItem>
                 <MenuItem value="'Roboto', sans-serif">Roboto</MenuItem>
@@ -193,11 +187,11 @@ function ScreenshotTool() {
             <FormControl fullWidth size="small">
               <InputLabel>Font Size</InputLabel>
               <Select
-                name="fontSize"
-                value={customStyles.fontSize}
+            name="fontSize" 
+            value={customStyles.fontSize} 
                 label="Font Size"
-                onChange={handleStyleChange}
-              >
+            onChange={handleStyleChange}
+          >
                 <MenuItem value="12px">Small</MenuItem>
                 <MenuItem value="14px">Medium</MenuItem>
                 <MenuItem value="16px">Large</MenuItem>
@@ -210,16 +204,16 @@ function ScreenshotTool() {
         {/* Chat Preview */}
         <Paper elevation={1} sx={{ flex: 1, p: 2, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', background: customStyles.backgroundColor }}>
           <Stack spacing={2}>
-            {messages.map((msg, index) => (
+        {messages.map((msg, index) => (
               <Box
-                key={index}
+            key={index} 
                 sx={{
                   display: 'flex',
                   flexDirection: msg.sender === Object.keys(users)[0] ? 'row-reverse' : 'row',
                   alignItems: 'flex-end',
-                }}
-                onClick={() => handleEditMessage(msg)}
-              >
+            }}
+            onClick={() => handleEditMessage(msg)}
+          >
                 <Avatar sx={{ bgcolor: msg.sender === Object.keys(users)[0] ? 'primary.main' : 'grey.400', ml: msg.sender === Object.keys(users)[0] ? 2 : 0, mr: msg.sender === Object.keys(users)[0] ? 0 : 2 }}>
                   {users[msg.sender]?.username?.charAt(0).toUpperCase() || '?'}
                 </Avatar>
@@ -237,25 +231,25 @@ function ScreenshotTool() {
                 >
                   <Box sx={{ mb: 0.5 }}>
                     <Typography variant="subtitle2" color="text.secondary">
-                      {users[msg.sender]?.username || 'Unknown User'}
+                {users[msg.sender]?.username || 'Unknown User'}
                     </Typography>
                   </Box>
-                  {msg.isScreenshot ? (
+            {msg.isScreenshot ? (
                     <Box className="screenshot-message">
                       <Typography variant="body2" fontWeight="bold">Screenshot</Typography>
-                      {msg.screenshotMetadata && Object.entries(msg.screenshotMetadata).map(([key, value]) => (
+                {msg.screenshotMetadata && Object.entries(msg.screenshotMetadata).map(([key, value]) => (
                         <Typography key={key} variant="caption"><strong>{key}:</strong> {value}</Typography>
-                      ))}
+                ))}
                     </Box>
-                  ) : (
+            ) : (
                     <Typography variant="body1">{msg.content}</Typography>
-                  )}
+            )}
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'right' }}>
                     {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString() : ''}
                   </Typography>
                 </Box>
               </Box>
-            ))}
+        ))}
           </Stack>
         </Paper>
       </Stack>
@@ -265,8 +259,8 @@ function ScreenshotTool() {
         <DialogTitle>Edit Message</DialogTitle>
         <DialogContent>
           <TextField
-            value={editedContent}
-            onChange={(e) => setEditedContent(e.target.value)}
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
             fullWidth
             multiline
             minRows={2}

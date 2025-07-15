@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
-import axios from 'axios';
+import { usersAPI, messagesAPI } from '../../services/api';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
 import { useSocket } from '../../context/SocketContext';
@@ -60,9 +60,7 @@ function ChatRoom() {
     // Get chat user info
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/users/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await usersAPI.getUserById(userId);
         setUser(res.data);
       } catch (err) {
         console.error('Error fetching user:', err);
@@ -82,10 +80,7 @@ function ChatRoom() {
       // Load previous messages
       const fetchMessages = async () => {
         try {
-          const token = localStorage.getItem('token');
-          const res = await axios.get(`http://localhost:5000/api/messages/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const res = await messagesAPI.getMessages(userId);
           setMessages(res.data);
         } catch (err) {
           console.error('Error fetching messages:', err);
@@ -132,10 +127,7 @@ function ChatRoom() {
 
       // Save message to database
       try {
-        const token = localStorage.getItem('token');
-        await axios.post('http://localhost:5000/api/messages', messageData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await messagesAPI.sendMessage(messageData);
       } catch (err) {
         console.error('Error sending message:', err);
       }
@@ -181,10 +173,7 @@ function ChatRoom() {
 
           // Save message to database
           try {
-            const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/messages', messageData, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
+            await messagesAPI.sendMessage(messageData);
           } catch (err) {
             console.error('Error sending screenshot message:', err);
           }

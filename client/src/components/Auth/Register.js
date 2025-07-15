@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import axios from 'axios';
+import { authAPI } from '../../services/api';
 import './Auth.css';
 import TextField from '@mui/material/TextField';
 
@@ -35,7 +35,7 @@ function Register() {
     }
 
     try {
-      const res = await axios.post('http://localhost:5000/api/users/register', {
+      const res = await authAPI.register({
         username: formData.username,
         email: formData.email,
         password: formData.password
