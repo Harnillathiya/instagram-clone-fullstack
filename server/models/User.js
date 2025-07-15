@@ -26,6 +26,11 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  unreadCount: {
+    type: Map,
+    of: Number,
+    default: new Map()
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -48,6 +53,15 @@ UserSchema.pre('save', async function(next) {
 // Method to compare passwords
 UserSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to get total unread count
+UserSchema.methods.getTotalUnreadCount = function() {
+  let total = 0;
+  for (let count of this.unreadCount.values()) {
+    total += count;
+  }
+  return total;
 };
 
 // Virtual field for chat list

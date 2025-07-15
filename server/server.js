@@ -33,11 +33,11 @@ app.use('/api/messages', require('./routes/messages'));
 
 // Socket.io for real-time chat
 io.on('connection', (socket) => {
-  console.log('New client connected');
+  // console.log('New client connected');
   
   socket.on('join_room', (roomId) => {
     socket.join(roomId);
-    console.log(`User joined room: ${roomId}`);
+    // console.log(`User joined room: ${roomId}`);
   });
 
   socket.on('send_message', (data) => {
@@ -45,7 +45,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected');
+    // console.log('Client disconnected');
   });
 });
 

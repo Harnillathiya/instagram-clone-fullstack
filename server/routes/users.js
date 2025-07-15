@@ -122,8 +122,20 @@ router.get('/:id', auth, async (req, res) => {
 // Get all users (for chat list)
 router.get('/', auth, async (req, res) => {
   try {
+    const currentUser = await User.findById(req.userId);
     const users = await User.find({ _id: { $ne: req.userId } }).select('-password');
-    res.json(users);
+    
+    // Add unread count for each user
+    const usersWithUnreadCount = users.map(user => {
+      const userObj = user.toObject();
+      const unreadCount = currentUser.unreadCount.get(user._id.toString()) || 0;
+      return {
+        ...userObj,
+        unreadCount
+      };
+    });
+    
+    res.json(usersWithUnreadCount);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

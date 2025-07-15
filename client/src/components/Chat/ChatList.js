@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { usersAPI } from '../../services/api';
+import { useSocket } from '../../context/SocketContext';
 import './ChatList.css';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
@@ -26,6 +27,7 @@ function ChatList() {
   const [error, setError] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const history = useHistory();
+  const { unreadCounts, clearUnreadCount } = useSocket();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -67,9 +69,21 @@ function ChatList() {
     history.push('/');
   };
 
+  const handleUserClick = (userId) => {
+    // Clear unread count when user clicks on a chat
+    clearUnreadCount(userId);
+  };
+
   const filteredUsers = users.filter(user => 
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Combine server unread counts with real-time socket updates
+  const getUnreadCount = (user) => {
+    const serverCount = user.unreadCount || 0;
+    const socketCount = unreadCounts[user._id] || 0;
+    return Math.max(serverCount, socketCount);
+  };
 
   if (loading) {
     return <div className="loading-container">Loading...</div>;
@@ -120,36 +134,58 @@ function ChatList() {
       <Box sx={{ p: 2 }}>
         <List>
           {filteredUsers.length > 0 ? (
-            filteredUsers.map(user => (
-              <ListItem
-                button
-                component={Link}
-                to={`/chat/${user._id}`}
-                key={user._id}
-                sx={{
-                  borderRadius: 2,
-                  '&:hover': {
-                    backgroundColor: 'action.hover',
-                  },
-                }}
-              >
-                <ListItemAvatar>
-                  <Avatar>{user.username.charAt(0).toUpperCase()}</Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={user.username}
-                  secondary={
-                    <Stack direction="row" alignItems="center">
-                      <CircleIcon sx={{ fontSize: 8, mr: 0.5 }} color={user.online ? 'success' : 'error'} />
-                      {user.online ? 'Online' : 'Offline'}
-                    </Stack>
-                  }
-                />
-                {user.unreadCount > 0 && (
-                  <Badge badgeContent={user.unreadCount} color="primary" />
-                )}
-              </ListItem>
-            ))
+            filteredUsers.map(user => {
+              const unreadCount = getUnreadCount(user);
+              return (
+                <ListItem
+                  button
+                  component={Link}
+                  to={`/chat/${user._id}`}
+                  key={user._id}
+                  onClick={() => handleUserClick(user._id)}
+                  sx={{
+                    borderRadius: 2,
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                    },
+                  }}
+                >
+                  <ListItemAvatar>
+                    <Badge
+                      badgeContent={unreadCount}
+                      color="error"
+                      invisible={!unreadCount || unreadCount === 0}
+                    >
+                      <Avatar>{user.username.charAt(0).toUpperCase()}</Avatar>
+                    </Badge>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Typography 
+                          variant="body1" 
+                          sx={{ 
+                            fontWeight: unreadCount > 0 ? 'bold' : 'normal',
+                            color: unreadCount > 0 ? 'text.primary' : 'text.secondary'
+                          }}
+                        >
+                          {user.username}
+                        </Typography>
+                        {unreadCount > 0 && (
+                          <Box sx={{ ml: 1, width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main' }} />
+                        )}
+                      </Box>
+                    }
+                    secondary={
+                      <Stack direction="row" alignItems="center">
+                        <CircleIcon sx={{ fontSize: 8, mr: 0.5 }} color={user.online ? 'success' : 'error'} />
+                        {user.online ? 'Online' : 'Offline'}
+                      </Stack>
+                    }
+                  />
+                </ListItem>
+              );
+            })
           ) : (
             <Typography variant="body1" align="center">
               {searchTerm ? 'No users found matching your search' : 'No users available'}

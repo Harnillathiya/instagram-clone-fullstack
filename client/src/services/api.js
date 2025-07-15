@@ -48,6 +48,7 @@ export const messagesAPI = {
   getMessages: (userId) => api.get(`/messages/${userId}`),
   sendMessage: (messageData) => api.post('/messages', messageData),
   getChatMessages: (chatId) => api.get(`/messages/chat/${chatId}`),
+  markMessagesAsRead: (userId) => api.put(`/messages/read/${userId}`),
 };
 
 export default api; 
