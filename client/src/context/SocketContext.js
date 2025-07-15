@@ -15,6 +15,7 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({});
   const history = useHistory();
   const socketInitialized = useRef(false);
 
@@ -56,6 +57,14 @@ export const SocketProvider = ({ children }) => {
             socketInstance.on('disconnect', () => {
               setIsConnected(false);
               console.log('Socket disconnected');
+            });
+
+            // Listen for unread count updates
+            socketInstance.on('unread_count_update', (data) => {
+              setUnreadCounts(prev => ({
+                ...prev,
+                [data.senderId]: data.count
+              }));
             });
           } else {
             // If socket is already connected, update state
@@ -102,7 +111,17 @@ export const SocketProvider = ({ children }) => {
       // Remove any existing listeners with the same event name to prevent duplicates
       socket.off('receive_message');
       // Add the new listener
-      socket.on('receive_message', callback);
+      socket.on('receive_message', (message) => {
+        callback(message);
+        
+        // Update unread count for the sender if message is not from current user
+        if (message.sender !== currentUser?._id) {
+          setUnreadCounts(prev => ({
+            ...prev,
+            [message.sender]: (prev[message.sender] || 0) + 1
+          }));
+        }
+      });
       
       // Return cleanup function
       return () => {
@@ -114,13 +133,32 @@ export const SocketProvider = ({ children }) => {
     return () => {};
   };
 
+  // Update unread count for a specific user
+  const updateUnreadCount = (userId, count) => {
+    setUnreadCounts(prev => ({
+      ...prev,
+      [userId]: count
+    }));
+  };
+
+  // Clear unread count for a specific user
+  const clearUnreadCount = (userId) => {
+    setUnreadCounts(prev => ({
+      ...prev,
+      [userId]: 0
+    }));
+  };
+
   const value = {
     socket,
     currentUser,
     isConnected,
+    unreadCounts,
     joinRoom,
     sendMessage,
-    onReceiveMessage
+    onReceiveMessage,
+    updateUnreadCount,
+    clearUnreadCount
   };
 
   return (

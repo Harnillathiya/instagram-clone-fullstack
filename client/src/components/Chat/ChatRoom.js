@@ -40,7 +40,7 @@ function ChatRoom() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
   // Use the socket context
-  const { socket, currentUser, joinRoom, sendMessage: socketSendMessage, onReceiveMessage } = useSocket();
+  const { socket, currentUser, joinRoom, sendMessage: socketSendMessage, onReceiveMessage, clearUnreadCount } = useSocket();
   
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -82,6 +82,13 @@ function ChatRoom() {
         try {
           const res = await messagesAPI.getMessages(userId);
           setMessages(res.data);
+          
+          // Mark messages as read when chat is opened
+          if (res.data.length > 0) {
+            await messagesAPI.markMessagesAsRead(userId);
+            // Clear unread count for this user
+            clearUnreadCount(userId);
+          }
         } catch (err) {
           console.error('Error fetching messages:', err);
         }
@@ -92,13 +99,22 @@ function ChatRoom() {
       // Set up message listener
       const cleanupListener = onReceiveMessage((message) => {
         setMessages((prevMessages) => [...prevMessages, message]);
+        
+        // Mark new message as read if it's from the current chat
+        if (message.sender === userId) {
+          messagesAPI.markMessagesAsRead(userId).catch(err => {
+            console.error('Error marking message as read:', err);
+          });
+          // Clear unread count for this user
+          clearUnreadCount(userId);
+        }
       });
 
       return () => {
         cleanupListener();
       };
     }
-  }, [socket, currentUser, user, userId, joinRoom, onReceiveMessage]);
+  }, [socket, currentUser, user, userId, joinRoom, onReceiveMessage, clearUnreadCount]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
