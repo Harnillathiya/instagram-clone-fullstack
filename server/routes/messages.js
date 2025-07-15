@@ -6,6 +6,10 @@ const path = require('path');
 const fs = require('fs');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const { GridFsStorage } = require('multer-gridfs-storage');
+const crypto = require('crypto');
+const { getGFS } = require('../gridfs');
+const mongoose = require('mongoose');
 
 // Middleware to protect routes
 const auth = (req, res, next) => {
@@ -19,60 +23,54 @@ const auth = (req, res, next) => {
   }
 };
 
-// Configure multer for image uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/images';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: function (req, file, cb) {
-    // Check file type
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
-  }
-});
-
-// Upload image
-router.post('/upload-image', auth, upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No image file provided' });
-    }
-
-    const imageUrl = `/uploads/images/${req.file.filename}`;
-    res.json({ 
-      imageUrl,
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      size: req.file.size
+// GridFS storage engine
+const storage = new GridFsStorage({
+  url: process.env.MONGO_URI || 'mongodb://localhost:27017/instagram-chat',
+  file: (req, file) => {
+    return new Promise((resolve, reject) => {
+      crypto.randomBytes(16, (err, buf) => {
+        if (err) return reject(err);
+        const filename = buf.toString('hex') + path.extname(file.originalname);
+        resolve({
+          filename: filename,
+          bucketName: 'uploads'
+        });
+      });
     });
-  } catch (error) {
-    console.error('Image upload error:', error);
-    res.status(500).json({ message: 'Image upload failed' });
+  }
+});
+const upload = multer({ storage });
+
+// Upload image to GridFS
+router.post('/upload-image', auth, upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No image file provided' });
+  }
+  // Return the file id and filename
+  res.json({ fileId: req.file.id, filename: req.file.filename });
+});
+
+// Serve image from GridFS
+router.get('/image/:id', async (req, res) => {
+  try {
+    const gfs = getGFS();
+    if (!gfs) return res.status(500).json({ message: 'GFS not initialized' });
+
+    const file = await gfs.files.findOne({ _id: mongoose.Types.ObjectId(req.params.id) });
+    if (!file) return res.status(404).json({ message: 'File not found' });
+
+    const readstream = gfs.createReadStream({ _id: file._id });
+    res.set('Content-Type', file.contentType);
+    readstream.pipe(res);
+  } catch (err) {
+    res.status(500).json({ message: 'Error retrieving image' });
   }
 });
 
 // Send a message
 router.post('/', auth, async (req, res) => {
   try {
-    const { recipient, content, isScreenshot, screenshotMetadata, imageUrl, messageType } = req.body;
+    const { recipient, content, isScreenshot, screenshotMetadata, imageFileId, messageType } = req.body;
 
     const newMessage = new Message({
       sender: req.userId,
@@ -80,7 +78,7 @@ router.post('/', auth, async (req, res) => {
       content,
       isScreenshot: isScreenshot || false,
       screenshotMetadata: screenshotMetadata || null,
-      imageUrl: imageUrl || null,
+      imageFileId: imageFileId || null,
       messageType: messageType || 'text' // 'text', 'image', 'screenshot'
     });
 
