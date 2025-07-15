@@ -15,6 +15,7 @@ import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import SendIcon from '@mui/icons-material/Send';
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import ImageIcon from '@mui/icons-material/Image';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
 import './ChatRoom.css';
@@ -37,6 +38,9 @@ function ChatRoom() {
   const [user, setUser] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [screenshotMetadata, setScreenshotMetadata] = useState({});
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
   // Use the socket context
@@ -44,6 +48,7 @@ function ChatRoom() {
   
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const imageInputRef = useRef(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const menuOpen = Boolean(anchorEl);
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
@@ -121,24 +126,60 @@ function ChatRoom() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadImage = async () => {
+    if (!selectedImage) return;
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+      
+      const res = await messagesAPI.uploadImage(formData);
+      return res.data.imageUrl;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !selectedImage) return;
 
     if (currentUser && user && socket) {
       const roomId = [currentUser._id, userId].sort().join('-');
       
+      let imageUrl = null;
+      let messageType = 'text';
+      
+      // Upload image if selected
+      if (selectedImage) {
+        imageUrl = await uploadImage();
+        messageType = 'image';
+      }
+      
       const messageData = {
         sender: currentUser._id,
         recipient: userId,
-        content: newMessage,
+        content: newMessage || (selectedImage ? 'Sent an image' : ''),
         isScreenshot: false,
         roomId,
-        createdAt: new Date().toISOString() // Add this line
+        createdAt: new Date().toISOString(),
+        imageUrl,
+        messageType
       };
 
       // Send message through socket
-      // Use the context's sendMessage function instead of direct socket.emit
       socketSendMessage(messageData);
 
       // Save message to database
@@ -149,6 +190,11 @@ function ChatRoom() {
       }
 
       setNewMessage('');
+      setSelectedImage(null);
+      setImagePreview(null);
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
     }
   };
 
@@ -315,6 +361,21 @@ function ChatRoom() {
                     <Typography key={key} variant="caption"><strong>{key}:</strong> {value}</Typography>
                   ))}
                 </Box>
+              ) : msg.messageType === 'image' ? (
+                <Box>
+                  <img 
+                    src={`http://localhost:5000${msg.imageUrl}`} 
+                    alt="Shared content" 
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: '200px', 
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => window.open(`http://localhost:5000${msg.imageUrl}`, '_blank')}
+                  />
+                  {msg.content && <Typography variant="body2" sx={{ mt: 1 }}>{msg.content}</Typography>}
+                </Box>
               ) : (
                 <Typography variant="body1">{msg.content}</Typography>
               )}
@@ -397,6 +458,42 @@ function ChatRoom() {
           position: 'relative'
         }}
       >
+        {imagePreview && (
+          <Box sx={{ position: 'absolute', bottom: 80, left: 20, zIndex: 10 }}>
+            <Box sx={{ position: 'relative', display: 'inline-block' }}>
+              <img 
+                src={imagePreview} 
+                alt="Preview" 
+                style={{ 
+                  width: '60px', 
+                  height: '60px', 
+                  objectFit: 'cover',
+                  borderRadius: '8px'
+                }} 
+              />
+              <IconButton
+                size="small"
+                sx={{ 
+                  position: 'absolute', 
+                  top: -8, 
+                  right: -8, 
+                  bgcolor: 'error.main',
+                  color: 'white',
+                  '&:hover': { bgcolor: 'error.dark' }
+                }}
+                onClick={() => {
+                  setSelectedImage(null);
+                  setImagePreview(null);
+                  if (imageInputRef.current) {
+                    imageInputRef.current.value = '';
+                  }
+                }}
+              >
+                ×
+              </IconButton>
+            </Box>
+          </Box>
+        )}
         <IconButton
           onClick={() => setShowEmojiPicker((val) => !val)}
           sx={{ mr: 1 }}
@@ -408,6 +505,20 @@ function ChatRoom() {
             <Picker data={data} onEmojiSelect={handleEmojiSelect} theme="light" />
           </Box>
         )}
+        <IconButton
+          onClick={() => imageInputRef.current?.click()}
+          sx={{ mr: 1 }}
+          disabled={uploadingImage}
+        >
+          <ImageIcon />
+        </IconButton>
+        <input
+          type="file"
+          ref={imageInputRef}
+          accept="image/*"
+          onChange={handleImageSelect}
+          style={{ display: 'none' }}
+        />
         <TextField
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
@@ -415,6 +526,7 @@ function ChatRoom() {
           fullWidth
           variant="outlined"
           size="small"
+          disabled={uploadingImage}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: '999px', // fully rounded
@@ -430,7 +542,7 @@ function ChatRoom() {
                 <IconButton
                   type="submit"
                   color="primary"
-                  disabled={!newMessage.trim()}
+                  disabled={(!newMessage.trim() && !selectedImage) || uploadingImage}
                   sx={{
                     background: 'none',
                     borderRadius: '50%',

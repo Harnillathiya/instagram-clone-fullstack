@@ -49,6 +49,7 @@ export const messagesAPI = {
   sendMessage: (messageData) => api.post('/messages', messageData),
   getChatMessages: (chatId) => api.get(`/messages/chat/${chatId}`),
   markMessagesAsRead: (userId) => api.put(`/messages/read/${userId}`),
+  uploadImage: (formData) => api.post('/messages/upload-image', formData),
 };
 
 export default api; 
