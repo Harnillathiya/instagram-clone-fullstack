@@ -86,7 +86,7 @@ function ChatList() {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {currentUser && (
               <>
-                <Avatar sx={{ mr: 1 }}>{currentUser.username.charAt(0).toUpperCase()}</Avatar>
+                <Avatar sx={{ mr: 1, cursor: 'pointer' }} onClick={() => history.push('/profile')} >{currentUser.username.charAt(0).toUpperCase()}</Avatar>
                 <Typography variant="h6">{currentUser.username}</Typography>
               </>
             )}
@@ -169,7 +169,7 @@ function ChatList() {
               <i className="chat-icon">💬</i>
             </div>
             <Typography variant="h5" component="h1" className="logo-text">
-              InstaChat
+              Realtime Chat
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary">

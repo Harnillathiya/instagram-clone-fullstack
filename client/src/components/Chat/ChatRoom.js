@@ -22,6 +22,12 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Picker from '@emoji-mart/react';
+import data from '@emoji-mart/data';
+import InsertEmoticonIcon from '@mui/icons-material/InsertEmoticon';
 
 function ChatRoom() {
   const { userId } = useParams();
@@ -31,12 +37,17 @@ function ChatRoom() {
   const [user, setUser] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [screenshotMetadata, setScreenshotMetadata] = useState({});
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
   // Use the socket context
   const { socket, currentUser, joinRoom, sendMessage: socketSendMessage, onReceiveMessage } = useSocket();
   
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const menuOpen = Boolean(anchorEl);
+  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
 
   // Fetch user info
   useEffect(() => {
@@ -199,6 +210,11 @@ function ChatRoom() {
     }));
   };
 
+  const handleEmojiSelect = (emoji) => {
+    setNewMessage((prev) => prev + emoji.native);
+    setShowEmojiPicker(false);
+  };
+
   if (!user || !currentUser) {
     return <Box className="loading"><Typography>Loading...</Typography></Box>;
   }
@@ -223,17 +239,39 @@ function ChatRoom() {
           <IconButton onClick={() => history.push('/chats')} color="primary">
             <ArrowBackIosNewIcon />
           </IconButton>
-          <Avatar>{user.username.charAt(0).toUpperCase()}</Avatar>
+          <Avatar
+            onClick={() => history.push('/profile')}
+            sx={{ cursor: 'pointer' }}
+          >
+            {user.username.charAt(0).toUpperCase()}
+          </Avatar>
           <Typography variant="h6">{user.username}</Typography>
         </Stack>
-        <Stack direction="row" spacing={1}>
-          <Button onClick={captureScreenshot} variant="outlined" startIcon={<CameraAltOutlinedIcon />} sx={{ textTransform: 'none' }}>
-            Quick Screenshot
-          </Button>
-          <Button onClick={goToScreenshotEditor} variant="outlined" startIcon={<EditOutlinedIcon />} sx={{ textTransform: 'none' }}>
-            Advanced Editor
-          </Button>
-        </Stack>
+        <IconButton onClick={handleMenuOpen} color="primary">
+          <MoreVertIcon />
+        </IconButton>
+        <Menu
+          anchorEl={anchorEl}
+          open={menuOpen}
+          onClose={handleMenuClose}
+        >
+          <MenuItem
+            onClick={() => {
+              handleMenuClose();
+              captureScreenshot();
+            }}
+            >
+            <CameraAltOutlinedIcon sx={{ mr: 1 }} /> Quick Screenshot
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              handleMenuClose();
+              goToScreenshotEditor();
+            }}
+            >
+            <EditOutlinedIcon sx={{ mr: 1 }} /> Advanced Editor
+          </MenuItem>
+        </Menu>
       </Box>
 
       <Box className="chat-container" ref={chatContainerRef} sx={{ flex: 1, overflowY: 'auto', p: 2, background: '#f9f9f9' }}>
@@ -351,8 +389,20 @@ function ChatRoom() {
           alignItems: 'center',
           gap: 2,
           background: '#fff',
+          position: 'relative'
         }}
       >
+        <IconButton
+          onClick={() => setShowEmojiPicker((val) => !val)}
+          sx={{ mr: 1 }}
+        >
+          <InsertEmoticonIcon />
+        </IconButton>
+        {showEmojiPicker && (
+          <Box sx={{ position: 'absolute', bottom: 56, left: 0, zIndex: 10 }}>
+            <Picker data={data} onEmojiSelect={handleEmojiSelect} theme="light" />
+          </Box>
+        )}
         <TextField
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}

@@ -8,6 +8,7 @@ import Register from './components/Auth/Register';
 import ChatList from './components/Chat/ChatList';
 import ChatRoom from './components/Chat/ChatRoom';
 import ScreenshotTool from './components/Screenshot/ScreenshotTool';
+import UserProfile from './components/Profile/UserProfile';
 
 // Import Socket Provider
 import { SocketProvider } from './context/SocketContext';
@@ -23,6 +24,7 @@ function App() {
             <Route path="/chats" component={ChatList} />
             <Route path="/chat/:userId" component={ChatRoom} />
             <Route path="/screenshot/:chatId" component={ScreenshotTool} />
+            <Route path="/profile" component={UserProfile} />
           </Switch>
         </div>
       </SocketProvider>
