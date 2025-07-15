@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import axios from 'axios';
+import { usersAPI } from '../../services/api';
 import './ChatList.css';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
@@ -36,9 +36,7 @@ function ChatList() {
 
     const fetchCurrentUser = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/users/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await usersAPI.getCurrentUser();
         setCurrentUser(res.data);
       } catch (err) {
         console.error('Error fetching current user:', err);
@@ -50,9 +48,7 @@ function ChatList() {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const res = await axios.get('http://localhost:5000/api/users', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await usersAPI.getAllUsers();
         setUsers(res.data);
         setLoading(false);
       } catch (err) {

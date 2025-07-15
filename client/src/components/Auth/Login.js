@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import axios from 'axios';
+import { authAPI } from '../../services/api';
 import './Auth.css';
 import TextField from '@mui/material/TextField';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
@@ -29,7 +29,7 @@ function Login() {
     setError('');
 
     try {
-      const res = await axios.post('http://localhost:5000/api/users/login', formData);
+      const res = await authAPI.login(formData);
       localStorage.setItem('token', res.data.token);
       history.push('/chats');
     } catch (err) {

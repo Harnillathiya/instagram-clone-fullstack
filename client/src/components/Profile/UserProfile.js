@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { usersAPI } from '../../services/api';
 import {
   Avatar,
   TextField,
@@ -30,10 +30,7 @@ function UserProfile() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/users/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await usersAPI.getCurrentUser();
         setUser(res.data);
         setForm({ username: res.data.username, email: res.data.email, password: '', avatar: null });
         setAvatarPreview(res.data.avatarUrl || '');
@@ -61,28 +58,21 @@ function UserProfile() {
     e.preventDefault();
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       // Update avatar if changed
       if (form.avatar) {
         const formData = new FormData();
         formData.append('avatar', form.avatar);
-        await axios.post('http://localhost:5000/api/users/me/avatar', formData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await usersAPI.updateAvatar(formData);
       }
       // Update user info
       const updateData = { username: form.username, email: form.email };
       if (form.password) updateData.password = form.password;
-      await axios.put('http://localhost:5000/api/users/me', updateData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await usersAPI.updateProfile(updateData);
       setSnackbar({ open: true, message: 'Profile updated successfully!', severity: 'success' });
       setEditMode(false);
       setForm((prev) => ({ ...prev, password: '', avatar: null }));
       // Refresh user info
-      const res = await axios.get('http://localhost:5000/api/users/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await usersAPI.getCurrentUser();
       setUser(res.data);
       setAvatarPreview(res.data.avatarUrl || '');
     } catch (err) {
