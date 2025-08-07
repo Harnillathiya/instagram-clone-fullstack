@@ -29,6 +29,9 @@ import MenuItem from '@mui/material/MenuItem';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 import InsertEmoticonIcon from '@mui/icons-material/InsertEmoticon';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import Modal from '@mui/material/Modal';
 
 function ChatRoom() {
   const { userId } = useParams();
@@ -42,9 +45,11 @@ function ChatRoom() {
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedMsg, setSelectedMsg] = useState(null);
   
   // Use the socket context
-  const { socket, currentUser, joinRoom, sendMessage: socketSendMessage, onReceiveMessage, clearUnreadCount } = useSocket();
+  const { socket, currentUser, joinRoom, sendMessage: socketSendMessage, onReceiveMessage, clearUnreadCount, onMessageDeleted } = useSocket();
   
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -53,6 +58,9 @@ function ChatRoom() {
   const menuOpen = Boolean(anchorEl);
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
+
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const [menuPosition, setMenuPosition] = useState({ mouseX: null, mouseY: null });
 
   // Fetch user info
   useEffect(() => {
@@ -120,6 +128,14 @@ function ChatRoom() {
       };
     }
   }, [socket, currentUser, user, userId, joinRoom, onReceiveMessage, clearUnreadCount]);
+
+  // Listen for real-time message deletion
+  useEffect(() => {
+    const cleanup = onMessageDeleted((data) => {
+      setMessages((prev) => prev.filter((msg) => msg._id !== data.messageId));
+    });
+    return cleanup;
+  }, [onMessageDeleted]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -256,6 +272,26 @@ function ChatRoom() {
     setShowEmojiPicker(false);
   };
 
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      await messagesAPI.deleteMessage(messageId);
+      // UI will update via socket event
+      setModalOpen(false);
+      setSelectedMsg(null);
+    } catch (err) {
+      console.error('Error deleting message:', err);
+    }
+  };
+  const handleCopyMessage = (msg) => {
+    if (msg.messageType === 'image' && msg.imageFileId) {
+      navigator.clipboard.writeText(`http://localhost:5000/api/messages/image/${msg.imageFileId}`);
+    } else {
+      navigator.clipboard.writeText(msg.content);
+    }
+    setModalOpen(false);
+    setSelectedMsg(null);
+  };
+
   if (!user || !currentUser) {
     return <Box className="loading"><Typography>Loading...</Typography></Box>;
   }
@@ -318,57 +354,72 @@ function ChatRoom() {
       <Box className="chat-container" ref={chatContainerRef} sx={{ flex: 1, overflowY: 'auto', p: 2, background: '#f9f9f9' }}>
         {messages.map((msg, index) => (
           <Box
-            key={index}
+            key={msg._id}
             sx={{
               display: 'flex',
               flexDirection: msg.sender === currentUser._id ? 'row-reverse' : 'row',
-              mb: 1.5,
               alignItems: 'flex-end',
+              mb: 2,
+              gap: 1
             }}
           >
             <Avatar sx={{ bgcolor: msg.sender === currentUser._id ? 'primary.main' : 'grey.400', ml: msg.sender === currentUser._id ? 2 : 0, mr: msg.sender === currentUser._id ? 0 : 2 }}>
               {msg.sender === currentUser._id ? currentUser.username.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
             </Avatar>
-            <Box
-              sx={{
-                bgcolor: msg.sender === currentUser._id ? 'primary.light' : 'grey.200',
-                color: 'text.primary',
-                px: 2,
-                py: 1,
-                borderRadius: 2,
-                minWidth: 80,
-                maxWidth: '70%',
-                boxShadow: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: msg.sender === currentUser._id ? 'flex-end' : 'flex-start',
-              }}
-            >
-              {msg.isScreenshot ? (
-                <Box className="screenshot-message">
-                  <Typography variant="body2" fontWeight="bold">Screenshot</Typography>
-                  {msg.screenshotMetadata && Object.entries(msg.screenshotMetadata).map(([key, value]) => (
-                    <Typography key={key} variant="caption"><strong>{key}:</strong> {value}</Typography>
-                  ))}
-                </Box>
-              ) : msg.messageType === 'image' ? (
-                <Box>
-                  <img 
-                    src={`http://localhost:5000/api/messages/image/${msg.imageFileId}`} 
-                    alt="Shared content" 
-                    style={{ 
-                      maxWidth: '100%', 
-                      maxHeight: '200px', 
-                      borderRadius: '8px',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => window.open(`http://localhost:5000/api/messages/image/${msg.imageFileId}`, '_blank')}
-                  />
-                  {msg.content && <Typography variant="body2" sx={{ mt: 1 }}>{msg.content}</Typography>}
-                </Box>
-              ) : (
-                <Typography variant="body1">{msg.content}</Typography>
-              )}
+            <Box sx={{ maxWidth: '70%', position: 'relative' }}>
+              <Box
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  // Always close any open menu before opening a new one
+                  setMenuAnchor(null);
+                  setMenuPosition({ mouseX: null, mouseY: null });
+                  setTimeout(() => {
+                    setSelectedMsg(msg);
+                    setMenuPosition({ mouseX: e.clientX - 2, mouseY: e.clientY - 4 });
+                    setMenuAnchor(e.currentTarget);
+                  }, 0);
+                }}
+                sx={{
+                  bgcolor: msg.sender === currentUser._id ? 'primary.light' : 'grey.200',
+                  color: 'text.primary',
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  minWidth: 80,
+                  maxWidth: '100%',
+                  boxShadow: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: msg.sender === currentUser._id ? 'flex-end' : 'flex-start',
+                  cursor: 'pointer',
+                }}
+              >
+                {msg.isScreenshot ? (
+                  <Box className="screenshot-message">
+                    <Typography variant="body2" fontWeight="bold">Screenshot</Typography>
+                    {msg.screenshotMetadata && Object.entries(msg.screenshotMetadata).map(([key, value]) => (
+                      <Typography key={key} variant="caption"><strong>{key}:</strong> {value}</Typography>
+                    ))}
+                  </Box>
+                ) : msg.messageType === 'image' ? (
+                  <Box>
+                    <img 
+                      src={`http://localhost:5000/api/messages/image/${msg.imageFileId}`} 
+                      alt="Shared content" 
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '200px', 
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                      onClick={(e) => { e.stopPropagation(); window.open(`http://localhost:5000/api/messages/image/${msg.imageFileId}`, '_blank'); }}
+                    />
+                    {msg.content && <Typography variant="body2" sx={{ mt: 1 }}>{msg.content}</Typography>}
+                  </Box>
+                ) : (
+                  <Typography variant="body1">{msg.content}</Typography>
+                )}
+              </Box>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, textAlign: 'right', width: '100%' }}>
                 {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
               </Typography>
@@ -448,28 +499,31 @@ function ChatRoom() {
           position: 'relative'
         }}
       >
+        {/* Inline image preview inside input area */}
         {imagePreview && (
-          <Box sx={{ position: 'absolute', bottom: 80, left: 20, zIndex: 10 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
             <Box sx={{ position: 'relative', display: 'inline-block' }}>
-              <img 
-                src={imagePreview} 
-                alt="Preview" 
-                style={{ 
-                  width: '60px', 
-                  height: '60px', 
+              <img
+                src={imagePreview}
+                alt="Preview"
+                style={{
+                  width: '48px',
+                  height: '48px',
                   objectFit: 'cover',
-                  borderRadius: '8px'
-                }} 
+                  borderRadius: '8px',
+                  border: '1px solid #eee',
+                }}
               />
               <IconButton
                 size="small"
-                sx={{ 
-                  position: 'absolute', 
-                  top: -8, 
-                  right: -8, 
+                sx={{
+                  position: 'absolute',
+                  top: -8,
+                  right: -8,
                   bgcolor: 'error.main',
                   color: 'white',
-                  '&:hover': { bgcolor: 'error.dark' }
+                  '&:hover': { bgcolor: 'error.dark' },
+                  zIndex: 2,
                 }}
                 onClick={() => {
                   setSelectedImage(null);
@@ -484,6 +538,7 @@ function ChatRoom() {
             </Box>
           </Box>
         )}
+        {/* Emoji, image, and text input controls */}
         <IconButton
           onClick={() => setShowEmojiPicker((val) => !val)}
           sx={{ mr: 1 }}
@@ -548,6 +603,40 @@ function ChatRoom() {
           }}
         />
       </Box>
+
+      {/* Message options menu at mouse position */}
+      <Menu
+        open={menuPosition.mouseY !== null}
+        onClose={() => { setMenuAnchor(null); setMenuPosition({ mouseX: null, mouseY: null }); setSelectedMsg(null); }}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          menuPosition.mouseY !== null && menuPosition.mouseX !== null
+            ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
+            : undefined
+        }
+        PaperProps={{ sx: { minWidth: 140 } }}
+      >
+        {selectedMsg && selectedMsg.sender === currentUser._id && (
+          <MenuItem
+            onClick={() => { handleDeleteMessage(selectedMsg._id); setMenuAnchor(null); setMenuPosition({ mouseX: null, mouseY: null }); }}
+            sx={{ color: 'error.main', fontWeight: 500 }}
+          >
+            Unsend
+          </MenuItem>
+        )}
+        <MenuItem
+          onClick={() => { handleCopyMessage(selectedMsg); setMenuAnchor(null); setMenuPosition({ mouseX: null, mouseY: null }); }}
+          sx={{ color: 'primary.main', fontWeight: 500 }}
+        >
+          Copy
+        </MenuItem>
+        <MenuItem
+          onClick={() => { setMenuAnchor(null); setMenuPosition({ mouseX: null, mouseY: null }); setSelectedMsg(null); }}
+          sx={{ color: 'text.secondary' }}
+        >
+          Close
+        </MenuItem>
+      </Menu>
     </Paper>
   );
 }

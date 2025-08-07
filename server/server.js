@@ -15,6 +15,9 @@ const io = socketIo(server, {
   }
 });
 
+// Attach io to app for access in routes
+app.set('io', io);
+
 // Middleware
 app.use(cors());
 app.use(express.json());

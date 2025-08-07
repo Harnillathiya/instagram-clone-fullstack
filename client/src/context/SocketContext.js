@@ -133,6 +133,22 @@ export const SocketProvider = ({ children }) => {
     return () => {};
   }, [socket, currentUser]);
 
+  // Listen for message_deleted event
+  const onMessageDeleted = useCallback((callback) => {
+    if (socket) {
+      socket.off('message_deleted');
+      socket.on('message_deleted', (data) => {
+        callback(data);
+      });
+      return () => {
+        if (socket) {
+          socket.off('message_deleted', callback);
+        }
+      };
+    }
+    return () => {};
+  }, [socket]);
+
   // Update unread count for a specific user
   const updateUnreadCount = useCallback((userId, count) => {
     setUnreadCounts(prev => ({
@@ -158,7 +174,8 @@ export const SocketProvider = ({ children }) => {
     sendMessage,
     onReceiveMessage,
     updateUnreadCount,
-    clearUnreadCount
+    clearUnreadCount,
+    onMessageDeleted
   };
 
   return (

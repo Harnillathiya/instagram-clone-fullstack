@@ -51,6 +51,7 @@ export const messagesAPI = {
   markMessagesAsRead: (userId) => api.put(`/messages/read/${userId}`),
   uploadImage: (formData) => api.post('/messages/upload-image', formData),
   getImage: (fileId) => api.get(`/messages/image/${fileId}`, { responseType: 'blob' }),
+  deleteMessage: (messageId) => api.delete(`/messages/${messageId}`),
 };
 
 export default api; 

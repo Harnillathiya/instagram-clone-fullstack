@@ -172,4 +172,35 @@ router.get('/chat/:chatId', auth, async (req, res) => {
   }
 });
 
+// Delete (unsend) a message
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.id);
+    // Only the sender can delete/unsend their message
+    if (!message || message.sender.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    // If the message has an image, delete from GridFS
+    if (message.imageFileId) {
+      const gfs = getGFS();
+      if (gfs) {
+        await gfs.files.deleteOne({ _id: message.imageFileId });
+        await gfs.db.collection('uploads.chunks').deleteMany({ files_id: message.imageFileId });
+      }
+    }
+    // Get io instance
+    const io = req.app.get('io');
+    // Compute roomId (sorted sender/recipient)
+    const roomId = [message.sender.toString(), message.recipient.toString()].sort().join('-');
+    await message.deleteOne();
+    // Emit message_deleted event to the room
+    if (io) {
+      io.to(roomId).emit('message_deleted', { messageId: req.params.id });
+    }
+    res.json({ message: 'Message deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
